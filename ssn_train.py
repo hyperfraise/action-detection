@@ -20,6 +20,20 @@ from torch.utils import model_zoo
 best_loss = 100
 
 
+def custom_load(model, state):
+    pretrained_dict = {}
+    model_state = model.state_dict()
+    for name, param in state.items():
+        if param.size(0) == 1:
+            pretrained_dict[name] = state[name][0]
+        else:
+            pretrained_dict[name] = state[name]
+
+    model_state.update(pretrained_dict)
+    model.load_state_dict(model_state)
+    return model
+
+
 def main():
     global args, best_loss
     args = parser.parse_args()
@@ -58,8 +72,8 @@ def main():
         # standard ImageNet pretraining
         if args.modality == "Flow":
             model_url = dataset_configs["flow_init"][args.arch]
-            model.base_model.load_state_dict(
-                model_zoo.load_url(model_url)["state_dict"]
+            model.base_model = custom_load(
+                model.base_model, model_zoo.load_url(model_url)["state_dict"]
             )
             print(("=> loaded flow init weights from '{}'".format(model_url)))
 
