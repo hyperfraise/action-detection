@@ -24,6 +24,8 @@ if args.dataset == "activitynet1.2":
     key_func = lambda x: x[-11:]
 elif args.dataset == "thumos14":
     key_func = lambda x: x.split("/")[-1]
+elif args.dataset == "simone":
+    key_func = lambda x: x.split("/")[-1]
 else:
     raise ValueError("unknown dataset {}".format(args.dataset))
 

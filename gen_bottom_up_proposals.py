@@ -46,20 +46,24 @@ parser.add_argument("--reg_score_files", type=str, nargs="+", default=None)
 parser.add_argument(
     "--frame_path", type=str, default="/mnt/SSD/ActivityNet/anet_v1.2_extracted_340/"
 )
+parser.add_argument("--annotation_path", type=str, default="/mnt/SSD/")
 
 args = parser.parse_args()
 
 
 if args.dataset == "activitynet":
     db = ANetDB.get_db(args.anet_version)
-    db.try_load_file_path("/mnt/SSD/ActivityNet/anet_v1.2_extracted_340/")
+    db.try_load_file_path(args.annotation_path + "ActivityNet/anet_v1.2_extracted_340/")
 elif args.dataset == "thumos14":
     db = THUMOSDB.get_db()
-    db.try_load_file_path("/mnt/SSD/THUMOS14/")
+    db.try_load_file_path(args.annotation_path + "THUMOS14/")
 
     # rename subset test
     if args.subset == "testing":
         args.subset = "test"
+elif args.dataset == "simone":
+    db = ANetDB.get_db(args.anet_version)
+    db.try_load_file_path(args.annotation_path + "simone_extracted_340/")
 else:
     raise ValueError("unknown dataset {}".format(args.dataset))
 

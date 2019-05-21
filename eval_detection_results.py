@@ -278,6 +278,8 @@ if args.dataset == "activitynet1.2":
     iou_range = np.arange(0.5, 1.0, 0.05)
 elif args.dataset == "thumos14":
     iou_range = np.arange(0.1, 1.0, 0.1)
+elif args.dataset == "simone":
+    iou_range = np.arange(0.5, 1.0, 0.05)
 else:
     raise ValueError("unknown dataset {}".format(args.dataset))
 
