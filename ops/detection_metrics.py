@@ -77,8 +77,13 @@ def name_proposal(gt_spans, est_spans, thresh=0.0):
 
 
 def get_temporal_proposal_recall(pr_list, gt_list, thresh):
-    recall_info_list = [temporal_recall(x, y, thresh=thresh) for x, y in zip(gt_list, pr_list)]
-    per_video_recall = np.sum([x[0] == x[1] for x in recall_info_list]) / float(len(recall_info_list))
-    per_inst_recall = np.sum([x[0] for x in recall_info_list]) / float(np.sum([x[1] for x in recall_info_list]))
+    recall_info_list = [
+        temporal_recall(x, y, thresh=thresh) for x, y in zip(gt_list, pr_list)
+    ]
+    per_video_recall = np.sum([x[0] == x[1] for x in recall_info_list]) / float(
+        len(recall_info_list)
+    )
+    per_inst_recall = np.sum([x[0] for x in recall_info_list]) / float(
+        np.sum([x[1] for x in recall_info_list])
+    )
     return per_video_recall, per_inst_recall
-

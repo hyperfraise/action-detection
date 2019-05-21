@@ -21,12 +21,16 @@ def default_aggregation_func(score_arr, normalization=True, crop_agg=None):
 def top_k_aggregation_func(score_arr, k, normalization=True, crop_agg=None):
     crop_agg = np.mean if crop_agg is None else crop_agg
     if normalization:
-        return softmax(np.sort(crop_agg(score_arr, axis=1), axis=0)[-k:, :].mean(axis=0))
+        return softmax(
+            np.sort(crop_agg(score_arr, axis=1), axis=0)[-k:, :].mean(axis=0)
+        )
     else:
         return np.sort(crop_agg(score_arr, axis=1), axis=0)[-k:, :].mean(axis=0)
 
 
-def sliding_window_aggregation_func(score, spans=[1, 2, 4, 8, 16], overlap=0.2, norm=True, fps=1):
+def sliding_window_aggregation_func(
+    score, spans=[1, 2, 4, 8, 16], overlap=0.2, norm=True, fps=1
+):
     """
     This is the aggregation function used for ActivityNet Challenge 2016
     :param score:
@@ -44,9 +48,11 @@ def sliding_window_aggregation_func(score, spans=[1, 2, 4, 8, 16], overlap=0.2, 
 
     for t_span in spans:
         span = t_span * fps
-        step = int(np.ceil(span * (1-overlap)))
-        local_agg = [frm_max[i: i+span].max(axis=0) for i in xrange(0, frm_max.shape[0], step)]
-        k = max(15, len(local_agg)/4)
+        step = int(np.ceil(span * (1 - overlap)))
+        local_agg = [
+            frm_max[i : i + span].max(axis=0) for i in xrange(0, frm_max.shape[0], step)
+        ]
+        k = max(15, len(local_agg) / 4)
         slide_score.append(top_k_pool(np.array(local_agg), k))
 
     out_score = np.mean(slide_score, axis=0)
@@ -59,13 +65,13 @@ def sliding_window_aggregation_func(score, spans=[1, 2, 4, 8, 16], overlap=0.2, 
 
 def tpp_aggregation_func(score, num_class):
     crop_avg = score.mean(axis=1)
-    stage = crop_avg.shape[1]/ num_class
+    stage = crop_avg.shape[1] / num_class
     length = score.shape[0]
     step = float(stage) / length
     out = np.zeros(num_class)
     for t in xrange(length):
         k = int(t * step)
-        out += crop_avg[t, k * num_class: (k+1)*num_class]
+        out += crop_avg[t, k * num_class : (k + 1) * num_class]
 
     return out / length
 

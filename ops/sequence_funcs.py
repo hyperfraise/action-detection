@@ -3,12 +3,16 @@ from .metrics import softmax
 import sys
 import numpy as np
 from scipy.ndimage import gaussian_filter
+
 try:
     from nms.nms_wrapper import nms
 except ImportError:
     nms = None
 
-def label_frame_by_threshold(score_mat, cls_lst, bw=None, thresh=list([0.05]), multicrop=True):
+
+def label_frame_by_threshold(
+    score_mat, cls_lst, bw=None, thresh=list([0.05]), multicrop=True
+):
     """
     Build frame labels by thresholding the foreground class responses
     :param score_mat:
@@ -27,9 +31,11 @@ def label_frame_by_threshold(score_mat, cls_lst, bw=None, thresh=list([0.05]), m
 
     rst = []
     for cls in cls_lst:
-        cls_score = ss[:, cls+1] if bw is None else gaussian_filter(ss[:, cls+1], bw)
+        cls_score = (
+            ss[:, cls + 1] if bw is None else gaussian_filter(ss[:, cls + 1], bw)
+        )
         for th in thresh:
-            rst.append((cls, cls_score > th, f_score[:, cls+1]))
+            rst.append((cls, cls_score > th, f_score[:, cls + 1]))
 
     return rst
 
@@ -89,7 +95,9 @@ def temporal_nms_fallback(bboxes, thresh, score_ind=3):
         tt1 = np.maximum(t1[i], t1[order[1:]])
         tt2 = np.minimum(t2[i], t2[order[1:]])
         intersection = tt2 - tt1 + 1
-        IoU = intersection / (durations[i] + durations[order[1:]] - intersection).astype(float)
+        IoU = intersection / (
+            durations[i] + durations[order[1:]] - intersection
+        ).astype(float)
 
         inds = np.where(IoU <= thresh)[0]
         order = order[inds + 1]
@@ -97,12 +105,11 @@ def temporal_nms_fallback(bboxes, thresh, score_ind=3):
     return [bboxes[i] for i in keep]
 
 
-
 def build_box_by_search(frm_label_lst, tol, min=1):
     boxes = []
     for cls, frm_labels, frm_scores in frm_label_lst:
         length = len(frm_labels)
-        diff = np.empty(length+1)
+        diff = np.empty(length + 1)
         diff[1:-1] = frm_labels[1:].astype(int) - frm_labels[:-1].astype(int)
         diff[0] = float(frm_labels[0])
         diff[length] = 0 - float(frm_labels[-1])
@@ -119,18 +126,41 @@ def build_box_by_search(frm_label_lst, tol, min=1):
                 s = signal[up[x]]
                 for y in range(x + 1, len(up)):
                     if y < len(down) and signal[up[y]] > s:
-                        boxes.append((up[x], down[y-1]+1, cls, sum(frm_scores[up[x]:down[y-1]+1])))
+                        boxes.append(
+                            (
+                                up[x],
+                                down[y - 1] + 1,
+                                cls,
+                                sum(frm_scores[up[x] : down[y - 1] + 1]),
+                            )
+                        )
                         break
                 else:
-                    boxes.append((up[x], down[-1] + 1, cls, sum(frm_scores[up[x]:down[-1] + 1])))
+                    boxes.append(
+                        (
+                            up[x],
+                            down[-1] + 1,
+                            cls,
+                            sum(frm_scores[up[x] : down[-1] + 1]),
+                        )
+                    )
 
             for x in range(len(down) - 1, -1, -1):
                 s = signal[down[x]] if down[x] < length else signal[-1] - t
                 for y in range(x - 1, -1, -1):
                     if y >= 0 and signal[down[y]] < s:
-                        boxes.append((up[y+1], down[x] + 1, cls, sum(frm_scores[up[y+1]:down[x] + 1])))
+                        boxes.append(
+                            (
+                                up[y + 1],
+                                down[x] + 1,
+                                cls,
+                                sum(frm_scores[up[y + 1] : down[x] + 1]),
+                            )
+                        )
                         break
                 else:
-                    boxes.append((up[0], down[x] + 1, cls, sum(frm_scores[0:down[x]+1 + 1])))
+                    boxes.append(
+                        (up[0], down[x] + 1, cls, sum(frm_scores[0 : down[x] + 1 + 1]))
+                    )
 
     return boxes

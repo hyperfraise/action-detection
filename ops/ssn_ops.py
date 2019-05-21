@@ -23,7 +23,8 @@ class StructuredTemporalPyramidPooling(torch.nn.Module):
     """
     This the STPP operator for training. Please see the ICCV paper for more details.
     """
-    def __init__(self, feat_dim, standalong_classifier=False, configs=(1, (1,2), 1)):
+
+    def __init__(self, feat_dim, standalong_classifier=False, configs=(1, (1, 2), 1)):
         super(StructuredTemporalPyramidPooling, self).__init__()
         self.sc = standalong_classifier
         self.feat_dim = feat_dim
@@ -52,16 +53,29 @@ class StructuredTemporalPyramidPooling(torch.nn.Module):
             for n_part in stage_parts:
                 ticks = torch.arange(0, stage_len + 1e-5, stage_len / n_part)
                 for i in range(n_part):
-                    part_ft = stage_ft[:, int(ticks[i]):int(ticks[i+1]), :].mean(dim=1) / norm_num
+                    part_ft = (
+                        stage_ft[:, int(ticks[i]) : int(ticks[i + 1]), :].mean(dim=1)
+                        / norm_num
+                    )
                     if scaling is not None:
                         part_ft = part_ft * scaling.resize(n_sample, 1)
                     stage_stpp.append(part_ft)
             return stage_stpp
 
         feature_parts = []
-        feature_parts.extend(get_stage_stpp(src[:, :x1, :], self.parts[0], self.norm_num[0], scaling[:, 0]))  # starting
-        feature_parts.extend(get_stage_stpp(src[:, x1:x2, :], self.parts[1], self.norm_num[1], None))  # course
-        feature_parts.extend(get_stage_stpp(src[:, x2:, :], self.parts[2], self.norm_num[2], scaling[:, 1]))  # ending
+        feature_parts.extend(
+            get_stage_stpp(
+                src[:, :x1, :], self.parts[0], self.norm_num[0], scaling[:, 0]
+            )
+        )  # starting
+        feature_parts.extend(
+            get_stage_stpp(src[:, x1:x2, :], self.parts[1], self.norm_num[1], None)
+        )  # course
+        feature_parts.extend(
+            get_stage_stpp(
+                src[:, x2:, :], self.parts[2], self.norm_num[2], scaling[:, 1]
+            )
+        )  # ending
         stpp_ft = torch.cat(feature_parts, dim=1)
         if not self.sc:
             return stpp_ft, stpp_ft
@@ -85,9 +99,16 @@ class STPPReorgainzed:
         It can accelerate the testing process by transforming the matrix multiplications into simple pooling.
     """
 
-    def __init__(self, feat_dim,
-                 act_score_len, comp_score_len, reg_score_len,
-                 standalong_classifier=False, with_regression=True, stpp_cfg=(1, 1, 1)):
+    def __init__(
+        self,
+        feat_dim,
+        act_score_len,
+        comp_score_len,
+        reg_score_len,
+        standalong_classifier=False,
+        with_regression=True,
+        stpp_cfg=(1, 1, 1),
+    ):
         self.sc = standalong_classifier
         self.act_len = act_score_len
         self.comp_len = comp_score_len
@@ -102,9 +123,16 @@ class STPPReorgainzed:
         feature_multiplie = starting_mult + course_mult + ending_mult
         self.stpp_cfg = (starting_parts, course_parts, ending_parts)
 
-        self.act_slice = slice(0, self.act_len if self.sc else (self.act_len * feature_multiplie))
-        self.comp_slice = slice(self.act_slice.stop, self.act_slice.stop + self.comp_len * feature_multiplie)
-        self.reg_slice = slice(self.comp_slice.stop, self.comp_slice.stop + self.reg_len * feature_multiplie)
+        self.act_slice = slice(
+            0, self.act_len if self.sc else (self.act_len * feature_multiplie)
+        )
+        self.comp_slice = slice(
+            self.act_slice.stop, self.act_slice.stop + self.comp_len * feature_multiplie
+        )
+        self.reg_slice = slice(
+            self.comp_slice.stop,
+            self.comp_slice.stop + self.reg_len * feature_multiplie,
+        )
 
     def forward(self, scores, proposal_ticks, scaling):
         assert scores.size(1) == self.feat_dim
@@ -144,28 +172,58 @@ class STPPReorgainzed:
                     part_ticks = np.arange(left, right + 1e-5, (right - left) / n_part)
                     for i in range(n_part):
                         pl = int(part_ticks[i])
-                        pr = int(part_ticks[i+1])
+                        pr = int(part_ticks[i + 1])
                         if pr - pl >= 1:
-                            out_scores[index, :] += raw_scores[pl:pr,
-                                                    offset * score_len: (offset + 1) * score_len].mean(dim=0) * s
+                            out_scores[index, :] += (
+                                raw_scores[
+                                    pl:pr, offset * score_len : (offset + 1) * score_len
+                                ].mean(dim=0)
+                                * s
+                            )
                         offset += 1
 
         for i in range(n_out):
             ticks = proposal_ticks[i].numpy()
             if self.sc:
                 try:
-                    out_act_scores[i, :] = raw_act_scores[ticks[1]:max(ticks[1] + 1, ticks[2]), :].mean(dim=0)
+                    out_act_scores[i, :] = raw_act_scores[
+                        ticks[1] : max(ticks[1] + 1, ticks[2]), :
+                    ].mean(dim=0)
                 except:
                     print(ticks)
                     raise
 
             else:
-                pspool(out_act_scores, i, raw_act_scores, ticks, scaling[i], self.act_len, self.stpp_cfg)
+                pspool(
+                    out_act_scores,
+                    i,
+                    raw_act_scores,
+                    ticks,
+                    scaling[i],
+                    self.act_len,
+                    self.stpp_cfg,
+                )
 
-            pspool(out_comp_scores, i, raw_comp_scores, ticks, scaling[i], self.comp_len, self.stpp_cfg)
+            pspool(
+                out_comp_scores,
+                i,
+                raw_comp_scores,
+                ticks,
+                scaling[i],
+                self.comp_len,
+                self.stpp_cfg,
+            )
 
             if self.with_regression:
-                pspool(out_reg_scores, i, raw_reg_scores, ticks, scaling[i], self.reg_len, self.stpp_cfg)
+                pspool(
+                    out_reg_scores,
+                    i,
+                    raw_reg_scores,
+                    ticks,
+                    scaling[i],
+                    self.reg_len,
+                    self.stpp_cfg,
+                )
 
         return out_act_scores, out_comp_scores, out_reg_scores
 
@@ -229,10 +287,20 @@ class CompletenessLoss(torch.nn.Module):
         neg_group_size = sample_group_size - sample_split
         pos_prob = pred[:, :sample_split, :].contiguous().view(-1, pred_dim)
         neg_prob = pred[:, sample_split:, :].contiguous().view(-1, pred_dim)
-        pos_ls = OHEMHingeLoss.apply(pos_prob, labels[:, :sample_split].contiguous().view(-1), 1,
-                                     1.0, pos_group_size)
-        neg_ls = OHEMHingeLoss.apply(neg_prob, labels[:, sample_split:].contiguous().view(-1), -1,
-                                     self.ohem_ratio, neg_group_size)
+        pos_ls = OHEMHingeLoss.apply(
+            pos_prob,
+            labels[:, :sample_split].contiguous().view(-1),
+            1,
+            1.0,
+            pos_group_size,
+        )
+        neg_ls = OHEMHingeLoss.apply(
+            neg_prob,
+            labels[:, sample_split:].contiguous().view(-1),
+            -1,
+            self.ohem_ratio,
+            neg_group_size,
+        )
         pos_cnt = pos_prob.size(0)
         neg_cnt = int(neg_prob.size()[0] * self.ohem_ratio)
 
@@ -251,8 +319,12 @@ class ClassWiseRegressionLoss(torch.nn.Module):
     def forward(self, pred, labels, targets):
         indexer = labels.data - 1
         prep = pred[:, indexer, :]
-        class_pred = torch.cat((torch.diag(prep[:, :,  0]).view(-1, 1),
-                                torch.diag(prep[:, :, 1]).view(-1, 1)),
-                               dim=1)
+        class_pred = torch.cat(
+            (
+                torch.diag(prep[:, :, 0]).view(-1, 1),
+                torch.diag(prep[:, :, 1]).view(-1, 1),
+            ),
+            dim=1,
+        )
         loss = self.smooth_l1_loss(class_pred.view(-1), targets.view(-1)) * 2
         return loss

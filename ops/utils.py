@@ -4,16 +4,17 @@ import yaml
 
 
 def get_configs(dataset):
-    data = yaml.load(open('data/dataset_cfg.yaml'))
+    data = yaml.load(open("data/dataset_cfg.yaml"))
     return data[dataset]
 
+
 def get_actionness_configs(dataset):
-    data = yaml.load(open('data/dataset_actionness_cfg.yaml'))
+    data = yaml.load(open("data/dataset_actionness_cfg.yaml"))
     return data[dataset]
 
 
 def get_reference_model_url(dataset, modality, init, arch):
-    data = yaml.load(open('data/reference_models.yaml'))
+    data = yaml.load(open("data/reference_models.yaml"))
     return data[dataset][init][arch][modality]
 
 
@@ -74,7 +75,9 @@ def temporal_nms(bboxes, thresh):
         tt1 = np.maximum(t1[i], t1[order[1:]])
         tt2 = np.minimum(t2[i], t2[order[1:]])
         intersection = tt2 - tt1
-        IoU = intersection / (durations[i] + durations[order[1:]] - intersection).astype(float)
+        IoU = intersection / (
+            durations[i] + durations[order[1:]] - intersection
+        ).astype(float)
 
         inds = np.where(IoU <= thresh)[0]
         order = order[inds + 1]

@@ -1,6 +1,6 @@
 torchvision
 numpy
-scikit-learn
+scikit - learn
 terminaltables
 pandas
 scipy
