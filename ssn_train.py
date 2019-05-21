@@ -115,7 +115,6 @@ def main():
             new_length=data_length,
             modality=args.modality,
             exclude_empty=True,
-            **sampling_configs,
             aug_seg=args.num_aug_segments,
             body_seg=args.num_body_segments,
             image_tmpl="img_{:05d}.jpg"
@@ -131,6 +130,7 @@ def main():
                     normalize,
                 ]
             )
+            ** sampling_configs,
         ),
         batch_size=args.batch_size,
         shuffle=True,

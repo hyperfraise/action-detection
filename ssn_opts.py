@@ -3,7 +3,9 @@ import argparse
 parser = argparse.ArgumentParser(
     description="PyTorch code to train Structured Segment Networks (SSN)"
 )
-parser.add_argument("dataset", type=str, choices=["activitynet1.2", "thumos14"])
+parser.add_argument(
+    "dataset", type=str, choices=["activitynet1.2", "thumos14", "simone"]
+)
 parser.add_argument("modality", type=str, choices=["RGB", "Flow", "RGBDiff"])
 
 # ========================= Model Configs ==========================
