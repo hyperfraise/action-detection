@@ -130,6 +130,7 @@ def main():
             epoch_multiplier=args.training_epoch_multiplier,
             new_length=data_length,
             modality=args.modality,
+            **sampling_configs,
             exclude_empty=True,
             aug_seg=args.num_aug_segments,
             body_seg=args.num_body_segments,
@@ -146,7 +147,6 @@ def main():
                     normalize,
                 ]
             )
-            ** sampling_configs,
         ),
         batch_size=args.batch_size,
         shuffle=True,
