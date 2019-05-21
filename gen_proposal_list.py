@@ -7,7 +7,9 @@ from ops.utils import get_configs
 parser = argparse.ArgumentParser(
     description="Generate proposal list to be used for training"
 )
-parser.add_argument("dataset", type=str, choices=["activitynet1.2", "thumos14"])
+parser.add_argument(
+    "dataset", type=str, choices=["activitynet1.2", "thumos14", "simone"]
+)
 parser.add_argument("frame_path", type=str)
 
 args = parser.parse_args()
