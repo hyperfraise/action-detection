@@ -60,13 +60,15 @@ def main():
         if os.path.isfile(args.init_weights):
             print(("=> loading pretrained weigths '{}'".format(args.init_weights)))
             wd = torch.load(args.init_weights)
-            model.base_model.load_state_dict(wd["state_dict"])
+            model.base_model = custom_load(model.base_model, wd["state_dict"])
             print(("=> loaded init weights from '{}'".format(args.init_weights)))
         else:
             print(("=> no weights file found at '{}'".format(args.init_weights)))
     elif args.kinetics_pretrain:
         model_url = dataset_configs["kinetics_pretrain"][args.arch][args.modality]
-        model.base_model.load_state_dict(model_zoo.load_url(model_url)["state_dict"])
+        model.base_model = custom_load(
+            model.base_model, model_zoo.load_url(model_url)["state_dict"]
+        )
         print(("=> loaded init weights from '{}'".format(model_url)))
     else:
         # standard ImageNet pretraining
